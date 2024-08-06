@@ -16,11 +16,11 @@ router.post("/incluirCliente", ClienteController.incluirCliente); //Testada
 router.put("/atualizarCliente/:idCliente", ClienteController.atualizarCliente); //Testada
 
 //PRODUTOS
-router.get("/produtos", ProdutoController.listarProdutos);
-router.get("/produtos/:idProduto", ProdutoController.getProdutoById);
-router.post("/incluirProduto", ProdutoController.incluirProduto);
-router.put("/atualizarProduto/:id", ProdutoController.atualizarProduto);
-router.delete("/excluirProduto/:id", ProdutoController.excluirProduto);
+router.get("/produtos", ProdutoController.listarProdutos); //Testada
+router.get("/produtos/:idProduto", ProdutoController.getProdutoById); //Testada
+router.post("/incluirProduto", ProdutoController.incluirProduto); //Testada
+router.put("/atualizarProduto/:id", ProdutoController.atualizarProduto); //Testada
+router.delete("/excluirProduto/:id", ProdutoController.excluirProduto); //Testada
 
 //PEDIDOS
 router.get("/Pedidos", PedidoController.listarPedidos);

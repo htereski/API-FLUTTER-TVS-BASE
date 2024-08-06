@@ -1,55 +1,36 @@
 import { Request, Response } from "express";
-import { Produto, ProdutoInstance } from "../models/Produto";
-import { Cliente, ClienteInstance } from "../models/Cliente";
-import { Pedido, PedidoInstance } from "../models/Pedido";
+import { Produto } from "../models/Produto";
+import { Cliente } from "../models/Cliente";
+import { Pedido } from "../models/Pedido";
 import { ItemDoPedido } from "../models/ItemDoPedido";
 
+// Listar todos os pedidos e retornar objetos separados para pedido e cliente
 export const listarPedidos = async (req: Request, res: Response) => {
   try {
     const pedidos = await Pedido.findAll({
       include: [
         {
           model: Cliente,
-        },
-        {
-          model: ItemDoPedido,
-          as: "ItensDoPedido",
-          include: [
-            {
-              model: Produto,
-              attributes: ["id", "descricao"],
-            },
-          ],
-        },
-      ],
+          as: "Cliente" // Use o alias correto aqui
+        }
+      ]
     });
-    // Mapeia o resultado para formatar a resposta conforme desejado
-    const pedidosFormatados = pedidos.map((pedido: PedidoInstance) => {
-      const clienteFormatado = {
-        id: pedido.Cliente.id,
-        nome: pedido.Cliente.nome,
-        sobrenome: pedido.Cliente.sobrenome,
-        cpf: pedido.Cliente.cpf,
-      } as ClienteInstance;
 
-      const itensDoPedidoFormatados = pedido.ItensDoPedido
-        ? pedido.ItensDoPedido.map((itemDoPedido) => ({
-            id: itemDoPedido.id,
-            qtdade: itemDoPedido.qtdade,
-            produto: {
-              id: itemDoPedido.id_produto,
-              descricao: itemDoPedido.Produto ? itemDoPedido.Produto.descricao : "",
-            },
-          }))
-        : [];
-
-      return {
-        id: pedido.id,
-        data: pedido.data,
-        cliente: clienteFormatado,
-        itensDoPedido: itensDoPedidoFormatados,
-      };
-    });
+    // Formata a resposta para separar os objetos de pedido e cliente
+    const pedidosFormatados = pedidos.map((pedido) => ({
+      pedido: {
+        id: pedido.id, // Inclui o id do pedido
+        data: pedido.data // Inclui a data do pedido
+      },
+      cliente: pedido.Cliente
+        ? {
+            id: pedido.Cliente.id,
+            nome: pedido.Cliente.nome,
+            sobrenome: pedido.Cliente.sobrenome,
+            cpf: pedido.Cliente.cpf
+          }
+        : null
+    }));
 
     res.json({ pedidos: pedidosFormatados });
   } catch (error) {
@@ -57,13 +38,37 @@ export const listarPedidos = async (req: Request, res: Response) => {
     res.status(500).json({ message: "Erro ao listar pedidos" });
   }
 };
+
+// Buscar pedido por ID e retornar objetos separados para pedido e cliente
 export const getPedidoById = async (req: Request, res: Response) => {
   try {
     const pedidoId = parseInt(req.params.idPedido, 10);
-    const pedido = await Pedido.findByPk(pedidoId);
+    const pedido = await Pedido.findByPk(pedidoId, {
+      include: [
+        {
+          model: Cliente,
+          as: "Cliente" // Use o alias correto aqui
+        }
+      ]
+    });
 
     if (pedido) {
-      res.json(pedido);
+      const response = {
+        pedido: {
+          id: pedido.id,
+          data: pedido.data
+        },
+        cliente: pedido.Cliente
+          ? {
+              id: pedido.Cliente.id,
+              nome: pedido.Cliente.nome,
+              sobrenome: pedido.Cliente.sobrenome,
+              cpf: pedido.Cliente.cpf
+            }
+          : null
+      };
+
+      res.json(response);
     } else {
       res.status(404).json({ message: "Pedido não encontrado" });
     }
@@ -73,6 +78,7 @@ export const getPedidoById = async (req: Request, res: Response) => {
   }
 };
 
+// Incluir um novo pedido
 export const incluirPedido = async (req: Request, res: Response) => {
   try {
     const { data, id_cliente } = req.body;
@@ -85,6 +91,7 @@ export const incluirPedido = async (req: Request, res: Response) => {
   }
 };
 
+// Atualizar um pedido existente
 export const atualizarPedido = async (req: Request, res: Response) => {
   try {
     const pedidoId = parseInt(req.params.id, 10);
@@ -104,6 +111,7 @@ export const atualizarPedido = async (req: Request, res: Response) => {
   }
 };
 
+// Excluir um pedido existente
 export const excluirPedido = async (req: Request, res: Response) => {
   try {
     const pedidoId = parseInt(req.params.id, 10);
