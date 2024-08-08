@@ -76,11 +76,13 @@ export const listarItensDoPedido = async (req: Request, res: Response) => {
       include: [
         {
           model: Produto,
-          attributes: ["id", "nome", "preco"] // Ajuste os atributos conforme necessário
+          as: "Produto",
+          attributes: ["id", "descricao"]
         },
         {
           model: Pedido,
-          attributes: ["id", "data", "id_cliente"] // Ajuste os atributos conforme necessário
+          as: "Pedido",
+          attributes: ["id", "data", "id_cliente"]
         }
       ]
     });
