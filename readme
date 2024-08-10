@@ -10,4 +10,4 @@ Rodar com:
 npm run start-dev
 
 Criar a no banco a migration com o sequelize:
-npm sequelize-cli db:migrate
+npx sequelize-cli db:migrate
