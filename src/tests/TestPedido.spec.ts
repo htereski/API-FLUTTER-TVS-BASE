@@ -1,7 +1,8 @@
+import { ClienteInstance } from './../models/Cliente'
 const request = require('supertest')
 import * as server from '../server'
 import { app } from '../server' // Certifique-se de que o caminho está correto
-import { Pedido } from '../models/Pedido'
+import { Pedido, PedidoInstance } from '../models/Pedido'
 import { Cliente } from '../models/Cliente'
 import { format, parseISO } from 'date-fns' //lib para a formatação das horas
 
@@ -21,7 +22,7 @@ describe('Teste da Rota incluirPedido', () => {
 
   it('Deve incluir um novo pedido com sucesso', async () => {
     const novoPedido = {
-      data: '2024-08-01',
+      data: Date.now(),
       id_cliente: clienteId
     }
 
@@ -46,24 +47,26 @@ describe('Teste da Rota incluirPedido', () => {
 })
 
 describe('Teste da Rota getPedidoById', () => {
-  // it('Deve retornar o pedido correto quando o id é válido', async () => {
-  //   const cliente = await Cliente.create({
-  //     nome: 'Temp',
-  //     sobrenome: 'Temp',
-  //     cpf: '0123456780'
-  //   })
+  let cliente: ClienteInstance
+  let pedido: PedidoInstance
+  it('Deve retornar o pedido correto quando o id é válido', async () => {
+    cliente = await Cliente.create({
+      nome: 'Temp',
+      sobrenome: 'Temp',
+      cpf: '0123456780'
+    })
 
-  //   const pedido = await Pedido.create({
-  //     data: Date.now(),
-  //     id_cliente: cliente.id
-  //   })
+    pedido = await Pedido.create({
+      data: Date.now(),
+      id_cliente: cliente.id
+    })
 
-  //   const idPedido = pedido.id;
-  //   const response = await request(app).get(`/pedidos/${idPedido}`)
+    const idPedido = pedido.id
+    const response = await request(app).get(`/pedidos/${idPedido}`)
 
-  //   expect(response.status).toBe(200)
-  //   expect(response.body).toHaveProperty('pedido.id', idPedido)
-  // })
+    expect(response.status).toBe(200)
+    expect(response.body).toHaveProperty('pedido.id', idPedido)
+  })
 
   it('Deve retornar um status 404 quando o Id do pedido não existe', async () => {
     const idPedido = 999
@@ -72,6 +75,14 @@ describe('Teste da Rota getPedidoById', () => {
 
     expect(response.status).toBe(404)
     expect(response.body).toHaveProperty('message', 'Pedido não encontrado')
+  })
+
+  afterAll(async () => {
+    // Remove o cliente criado no teste
+    if (cliente && pedido) {
+      await Pedido.destroy({ where: { id: pedido.id } })
+      await Cliente.destroy({ where: { id: cliente.id } })
+    }
   })
 })
 
@@ -96,10 +107,11 @@ describe('Teste da Rota listarPedidos', () => {
 describe('Teste da Rota excluirPedido', () => {
   let pedidoId: number
   let clienteId: number
+  let cliente: ClienteInstance
 
   beforeAll(async () => {
     // Cria um cliente e um pedido para o teste de exclusão
-    const cliente = await Cliente.create({
+    cliente = await Cliente.create({
       nome: 'Cliente Teste',
       sobrenome: 'Sobrenome Teste',
       cpf: '12345678900'
@@ -115,7 +127,8 @@ describe('Teste da Rota excluirPedido', () => {
 
   afterAll(async () => {
     // Limpa o cliente criado no teste
-    await Cliente.destroy({ where: { id: clienteId } })
+    await Pedido.destroy({ where: { id: pedidoId } })
+    await Cliente.destroy({ where: { id: cliente.id } })
   })
 
   it('Deve excluir um pedido existente', async () => {

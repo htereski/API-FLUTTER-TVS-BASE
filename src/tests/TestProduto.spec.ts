@@ -1,95 +1,107 @@
-const request = require("supertest");
-import * as server from "../server";
-import { app } from "../server"; // Certifique-se de que o caminho está correto
-import { Request, Response } from "express";
-import { Produto } from "../models/Produto";
+const request = require('supertest')
+import * as server from '../server'
+import { app } from '../server' // Certifique-se de que o caminho está correto
+import { Request, Response } from 'express'
+import { Produto, ProdutoInstance } from '../models/Produto'
+import { Cliente } from '../models/Cliente'
 
-describe("Teste da Rota incluirProduto", () => {
-  let produtoId: number;
+describe('Teste da Rota incluirProduto', () => {
+  let produtoId: number
 
-  it("Deve incluir um novo produto com sucesso", async () => {
+  it('Deve incluir um novo produto com sucesso', async () => {
     const novoProduto = {
-      descricao: "Novo Produto"
-    };
+      descricao: 'Novo Produto'
+    }
 
-    const response = await request(app).post("/incluirProduto").send(novoProduto);
+    const response = await request(app)
+      .post('/incluirProduto')
+      .send(novoProduto)
 
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty("id");
-    expect(response.body.descricao).toBe(novoProduto.descricao);
+    expect(response.status).toBe(201)
+    expect(response.body).toHaveProperty('id')
+    expect(response.body.descricao).toBe(novoProduto.descricao)
 
-    produtoId = response.body.id; // Armazena o ID do produto recém-criado para limpeza posterior
-  });
+    produtoId = response.body.id // Armazena o ID do produto recém-criado para limpeza posterior
+  })
 
   afterAll(async () => {
     // Remove o produto criado no teste
     if (produtoId) {
-      await Produto.destroy({ where: { id: produtoId } });
+      await Produto.destroy({ where: { id: produtoId } })
     }
-  });
-});
+  })
+})
 
-describe("Teste da Rota getProdutoById", () => {
-  it("Deve retornar o produto correto quando o id é válido", async () => {
-    const idProduto = 1; // Supondo que este seja um ID válido existente no seu banco de dados
-    const response = await request(app).get(`/produtos/${idProduto}`);
+describe('Teste da Rota getProdutoById', () => {
+  it('Deve retornar o produto correto quando o id é válido', async () => {
+    const produto = await Produto.create({
+      descricao: 'Teste Produto'
+    })
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty("id", idProduto);
-  });
+    const idProduto = produto.id
 
-  it("Deve retornar um status 404 quando o Id do produto não existe", async () => {
-    const idProduto = 999;
+    const response = await request(app).get(`/produtos/${idProduto}`)
 
-    const response = await request(app).get(`/produtos/${idProduto}`);
+    expect(response.status).toBe(200)
+    expect(response.body).toHaveProperty('id', idProduto)
+  })
 
-    expect(response.status).toBe(404);
-    expect(response.body).toHaveProperty("message", "Produto não encontrado");
-  });
-});
+  it('Deve retornar um status 404 quando o Id do produto não existe', async () => {
+    const idProduto = 999
 
-describe("Teste da Rota listarProdutos", () => {
-  it("Deve retornar uma lista de produtos", async () => {
-    const response = await request(app).get("/produtos");
+    const response = await request(app).get(`/produtos/${idProduto}`)
 
-    expect(response.status).toBe(200);
-    expect(response.body.produtos).toBeInstanceOf(Array);
-  });
+    expect(response.status).toBe(404)
+    expect(response.body).toHaveProperty('message', 'Produto não encontrado')
+  })
+})
 
-  it("Deve retornar a lista de produtos dentro de um tempo aceitável", async () => {
-    const start = Date.now();
-    const response = await request(app).get("/produtos");
-    const duration = Date.now() - start;
+describe('Teste da Rota listarProdutos', () => {
+  it('Deve retornar uma lista de produtos', async () => {
+    const response = await request(app).get('/produtos')
 
-    expect(response.status).toBe(200);
-    expect(duration).toBeLessThan(100); // Verifica se a resposta é retornada em menos de 100ms
-  });
-});
+    expect(response.status).toBe(200)
+    expect(response.body.produtos).toBeInstanceOf(Array)
+  })
 
-describe("Teste da Rota excluirProduto", () => {
+  it('Deve retornar a lista de produtos dentro de um tempo aceitável', async () => {
+    const start = Date.now()
+    const response = await request(app).get('/produtos')
+    const duration = Date.now() - start
+
+    expect(response.status).toBe(200)
+    expect(duration).toBeLessThan(100) // Verifica se a resposta é retornada em menos de 100ms
+  })
+})
+
+describe('Teste da Rota excluirProduto', () => {
+  let produto: ProdutoInstance
   beforeAll(async () => {
     // Cria um produto com um ID único para o teste de exclusão
-    await Produto.create({ id: 99, descricao: "Produto Teste" });
-  });
+    produto = await Produto.create({ descricao: 'Produto Teste' })
+  })
 
   afterAll(async () => {
     // Limpa o banco de dados após os testes
-    await Produto.destroy({ where: { id: 99 } });
-  });
+    await Produto.destroy({ where: { id: produto.id } })
+  })
 
-  it("Deve excluir um produto existente", async () => {
+  it('Deve excluir um produto existente', async () => {
     // Faz a requisição para excluir o produto com ID 99
-    const response = await request(app).delete("/excluirProduto/99");
+    const response = await request(app).delete(`/excluirProduto/${produto.id}`)
 
     // Verifica se a resposta da API está correta
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty("message", "Produto excluído com sucesso");
+    expect(response.status).toBe(200)
+    expect(response.body).toHaveProperty(
+      'message',
+      'Produto excluído com sucesso'
+    )
 
     // Verifica se o produto foi realmente excluído
-    const produtoExcluido = await Produto.findByPk(99);
-    expect(produtoExcluido).toBeNull(); // Deve retornar null se o produto foi excluído
-  });
-});
+    const produtoExcluido = await Produto.findByPk(produto.id)
+    expect(produtoExcluido).toBeNull() // Deve retornar null se o produto foi excluído
+  })
+})
 
 describe("Teste da Rota atualizarProduto", () => {
   let produtoId: number;

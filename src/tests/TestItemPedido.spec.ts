@@ -1,132 +1,305 @@
-const request = require("supertest");
-import * as server from "../server";
-import { app } from "../server"; // Certifique-se de que o caminho está correto
-import { Request, Response } from "express";
-import { Produto } from "../models/Produto";
+const request = require('supertest')
+import * as server from '../server'
+import { app } from '../server' // Certifique-se de que o caminho está correto
+import { Request, Response } from 'express'
+import { Produto, ProdutoInstance } from '../models/Produto'
+import { Cliente, ClienteInstance } from '../models/Cliente'
+import { Pedido, PedidoInstance } from '../models/Pedido'
+import { ItemDoPedido } from '../models/ItemDoPedido'
 
-describe("Teste da Rota incluirProduto", () => {
-  let produtoId: number;
+describe('Teste da Rota incluirItemDoPedido', () => {
+  let itemDoPedidoId: number
+  let pedido: PedidoInstance
+  let cliente: ClienteInstance
+  let produto: ProdutoInstance
 
-  it("Deve incluir um novo produto com sucesso", async () => {
-    const novoProduto = {
-      descricao: "Novo Produto"
-    };
+  it('Deve incluir um novo ItemDoPedido com sucesso', async () => {
+    cliente = await Cliente.create({
+      nome: 'Teste',
+      sobrenome: 'Cliente',
+      cpf: '22222222222'
+    })
 
-    const response = await request(app).post("/incluirProduto").send(novoProduto);
+    produto = await Produto.create({
+      descricao: 'Teste Produto'
+    })
 
-    expect(response.status).toBe(201);
-    expect(response.body).toHaveProperty("id");
-    expect(response.body.descricao).toBe(novoProduto.descricao);
+    pedido = await Pedido.create({
+      data: Date.now(),
+      id_cliente: cliente.id
+    })
 
-    produtoId = response.body.id; // Armazena o ID do produto recém-criado para limpeza posterior
-  });
-
-  afterAll(async () => {
-    // Remove o produto criado no teste
-    if (produtoId) {
-      await Produto.destroy({ where: { id: produtoId } });
+    const novoItemDePedido = {
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 1
     }
-  });
-});
 
-describe("Teste da Rota getProdutoById", () => {
-  it("Deve retornar o produto correto quando o id é válido", async () => {
-    const idProduto = 1; // Supondo que este seja um ID válido existente no seu banco de dados
-    const response = await request(app).get(`/produtos/${idProduto}`);
+    const response = await request(app)
+      .post('/incluirItemDoPedido')
+      .send(novoItemDePedido)
 
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty("id", idProduto);
-  });
+    expect(response.status).toBe(201)
+    expect(response.body).toHaveProperty('id')
+    expect(response.body.id_pedido).toBe(novoItemDePedido.id_pedido)
+    expect(response.body.id_produto).toBe(novoItemDePedido.id_produto)
+    expect(response.body.qtdade).toBe(novoItemDePedido.qtdade)
 
-  it("Deve retornar um status 404 quando o Id do produto não existe", async () => {
-    const idProduto = 999;
-
-    const response = await request(app).get(`/produtos/${idProduto}`);
-
-    expect(response.status).toBe(404);
-    expect(response.body).toHaveProperty("message", "Produto não encontrado");
-  });
-});
-
-describe("Teste da Rota listarProdutos", () => {
-  it("Deve retornar uma lista de produtos", async () => {
-    const response = await request(app).get("/produtos");
-
-    expect(response.status).toBe(200);
-    expect(response.body.produtos).toBeInstanceOf(Array);
-  });
-
-  it("Deve retornar a lista de produtos dentro de um tempo aceitável", async () => {
-    const start = Date.now();
-    const response = await request(app).get("/produtos");
-    const duration = Date.now() - start;
-
-    expect(response.status).toBe(200);
-    expect(duration).toBeLessThan(100); // Verifica se a resposta é retornada em menos de 100ms
-  });
-});
-
-describe("Teste da Rota excluirProduto", () => {
-  beforeAll(async () => {
-    // Cria um produto com um ID único para o teste de exclusão
-    await Produto.create({ id: 99, descricao: "Produto Teste" });
-  });
+    itemDoPedidoId = response.body.id
+    console.log('response.body: ' + JSON.stringify(response.body))
+  })
 
   afterAll(async () => {
-    // Limpa o banco de dados após os testes
-    await Produto.destroy({ where: { id: 99 } });
-  });
+    // if (itemDoPedidoId) {
+    await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
+    await Pedido.destroy({ where: { id: pedido.id } })
+    await Cliente.destroy({ where: { id: cliente.id } })
+    await Produto.destroy({ where: { id: produto.id } })
+    // }
+  })
+})
 
-  it("Deve excluir um produto existente", async () => {
-    // Faz a requisição para excluir o produto com ID 99
-    const response = await request(app).delete("/excluirProduto/99");
+describe('Teste da Rota getItensDoPedidoById', () => {
+  let itemDoPedidoId: number
+  let pedido: PedidoInstance
+  let cliente: ClienteInstance
+  let produto: ProdutoInstance
+  it('Deve retornar o ItemDoPedido correto quando o id é válido', async () => {
+    cliente = await Cliente.create({
+      nome: 'OI',
+      sobrenome: 'TV',
+      cpf: '01234567891'
+    })
 
-    // Verifica se a resposta da API está correta
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty("message", "Produto excluído com sucesso");
+    produto = await Produto.create({
+      descricao: 'Teste Produto'
+    })
 
-    // Verifica se o produto foi realmente excluído
-    const produtoExcluido = await Produto.findByPk(99);
-    expect(produtoExcluido).toBeNull(); // Deve retornar null se o produto foi excluído
-  });
-});
+    pedido = await Pedido.create({
+      data: Date.now(),
+      id_cliente: cliente.id
+    })
 
-describe("Teste da Rota atualizarProduto", () => {
-  let produtoId: number;
+    const itemDoPedido = await ItemDoPedido.create({
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 1
+    })
 
-  beforeAll(async () => {
-    // Cria um produto para ser atualizado
-    const produto = await Produto.create({
-      descricao: "Produto para Atualizar"
-    });
-    produtoId = produto.id;
-  });
+    itemDoPedidoId = itemDoPedido.id
+    // console.log("itemDoPedido.id: " + itemDoPedido.id)
+    const response = await request(app).get(`/itensDoPedido/${itemDoPedidoId}`)
 
-  it("Deve atualizar um produto com sucesso", async () => {
-    const produtoAtualizado = {
-      descricao: "Produto Atualizado"
-    };
+    expect(response.status).toBe(200)
+    expect(response.body.itemDoPedido).toHaveProperty('id', itemDoPedidoId)
+  })
 
-    const response = await request(app).put(`/atualizarProduto/${produtoId}`).send(produtoAtualizado);
+  it('Deve retornar um status 404 quando o Id do itensDoPedido não existe', async () => {
+    const itensDoPedidoID = 999
 
-    expect(response.status).toBe(200);
-    expect(response.body.descricao).toBe(produtoAtualizado.descricao);
-  });
+    const response = await request(app).get(`/itensDoPedido/${itensDoPedidoID}`)
 
-  it("Deve retornar erro ao tentar atualizar produto inexistente", async () => {
-    const produtoInexistenteId = 999999;
-    const produtoAtualizado = {
-      descricao: "Produto Inexistente"
-    };
-
-    const response = await request(app).put(`/atualizarProduto/${produtoInexistenteId}`).send(produtoAtualizado);
-
-    expect(response.status).toBe(404);
-    expect(response.body).toHaveProperty("message", "Produto não encontrado");
-  });
+    expect(response.status).toBe(404)
+    expect(response.body).toHaveProperty('message', 'Item do Pedido não encontrado')
+  })
 
   afterAll(async () => {
-    // Limpeza dos produtos criados
-    await Produto.destroy({ where: { id: produtoId } });
-  });
-});
+    if (itemDoPedidoId) {
+      await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
+      await Pedido.destroy({ where: { id: pedido.id } })
+      await Cliente.destroy({ where: { id: cliente.id } })
+      await Produto.destroy({ where: { id: produto.id } })
+    }
+  })
+})
+
+describe('Teste da Rota listarItemDoPedido', () => {
+  let itemDoPedidoId1: number
+  let itemDoPedidoId2: number
+  let pedido: PedidoInstance
+  let cliente: ClienteInstance
+  let produto: ProdutoInstance
+
+  it('Deve retornar uma lista de ItemDoPedido', async () => {
+    cliente = await Cliente.create({
+      nome: 'OI',
+      sobrenome: 'TV',
+      cpf: '01234567891'
+    })
+
+    produto = await Produto.create({
+      descricao: 'Teste Produto'
+    })
+
+    pedido = await Pedido.create({
+      data: Date.now(),
+      id_cliente: cliente.id
+    })
+
+    const itemDoPedido1 = await ItemDoPedido.create({
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 1
+    })
+
+    itemDoPedidoId1 = itemDoPedido1.id
+
+    const itemDoPedido2 = await ItemDoPedido.create({
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 1
+    })
+
+    itemDoPedidoId2 = itemDoPedido2.id
+
+    const response = await request(app).get('/itensDoPedido')
+
+    expect(response.status).toBe(200)
+    expect(response.body.itensDoPedido).toBeInstanceOf(Array)
+  })
+
+  it('Deve retornar a lista de ItemDoPedido dentro de um tempo aceitável', async () => {
+    const start = Date.now()
+    const response = await request(app).get('/itensDoPedido')
+    const duration = Date.now() - start
+
+    expect(response.status).toBe(200)
+    expect(duration).toBeLessThan(100) // Verifica se a resposta é retornada em menos de 100ms
+  })
+
+  afterAll(async () => {
+    await ItemDoPedido.destroy({ where: { id: itemDoPedidoId1 } })
+    await ItemDoPedido.destroy({ where: { id: itemDoPedidoId2 } })
+    await Pedido.destroy({ where: { id: pedido.id } })
+    await Cliente.destroy({ where: { id: cliente.id } })
+    await Produto.destroy({ where: { id: produto.id } })
+  })
+})
+
+describe('Teste da Rota excluirItemDoPedido', () => {
+  let itemDoPedidoId: number
+  let pedido: PedidoInstance
+  let cliente: ClienteInstance
+  let produto: ProdutoInstance
+
+  beforeAll(async () => {
+    cliente = await Cliente.create({
+      nome: 'Claro',
+      sobrenome: 'TV',
+      cpf: '01234567891'
+    })
+
+    produto = await Produto.create({
+      descricao: 'Teste Produto'
+    })
+
+    pedido = await Pedido.create({
+      data: Date.now(),
+      id_cliente: cliente.id
+    })
+
+    const itemDoPedido = await ItemDoPedido.create({
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 1
+    })
+    console.log('itemDoPedido: ' + itemDoPedido.id)
+    itemDoPedidoId = itemDoPedido.id
+  })
+
+  afterAll(async () => {
+    await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
+    await Pedido.destroy({ where: { id: pedido.id } })
+    await Cliente.destroy({ where: { id: cliente.id } })
+    await Produto.destroy({ where: { id: produto.id } })
+  })
+
+  it('Deve excluir um ItemDoPedido existente', async () => {
+    const response = await request(app).delete(
+      `/excluirItemDoPedido/${itemDoPedidoId}`
+    )
+
+    expect(response.status).toBe(200)
+    expect(response.body).toHaveProperty(
+      'message',
+      'Item do Pedido excluído com sucesso'
+    )
+
+    const produtoExcluido = await Produto.findByPk(itemDoPedidoId)
+    expect(produtoExcluido).toBeNull()
+  })
+})
+
+describe('Teste da Rota atualizarItemDoPedido', () => {
+  let itemDoPedidoId: number
+  let pedido: PedidoInstance
+  let cliente: ClienteInstance
+  let produto: ProdutoInstance
+
+  beforeAll(async () => {
+    cliente = await Cliente.create({
+      nome: 'SKY',
+      sobrenome: 'TV',
+      cpf: '01234567891'
+    })
+
+    produto = await Produto.create({
+      descricao: 'Teste Produto'
+    })
+
+    pedido = await Pedido.create({
+      data: Date.now(),
+      id_cliente: cliente.id
+    })
+
+    const itemDoPedido = await ItemDoPedido.create({
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 1
+    })
+    itemDoPedidoId = itemDoPedido.id
+  })
+
+  it('Deve atualizar um ItemDoPedido com sucesso', async () => {
+    const itemDoPedido = {
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 3
+    }
+
+    const response = await request(app)
+      .put(`/atualizarItemDoPedido/${itemDoPedidoId}`)
+      .send(itemDoPedido)
+
+    expect(response.status).toBe(200)
+    expect(response.body.id_pedido).toBe(itemDoPedido.id_pedido);
+    expect(response.body.id_produto).toBe(itemDoPedido.id_produto);
+    expect(response.body.qtdade).toBe(itemDoPedido.qtdade);
+  })
+
+  it('Deve retornar erro ao tentar atualizar ItemDoPedido inexistente', async () => {
+    const itemDoPedidoInexistenteId = 999999
+    const itemDoPedidoAtualizado = {
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 3
+    }
+
+    const response = await request(app)
+      .put(`/atualizarItemDoPedido/${itemDoPedidoInexistenteId}`)
+      .send(itemDoPedidoAtualizado)
+
+    expect(response.status).toBe(404)
+    expect(response.body).toHaveProperty(
+      'message',
+      'Item do Pedido não encontrado'
+    )
+  })
+
+  afterAll(async () => {
+    await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
+    await Pedido.destroy({ where: { id: pedido.id } })
+    await Cliente.destroy({ where: { id: cliente.id } })
+    await Produto.destroy({ where: { id: produto.id } })
+  })
+})
