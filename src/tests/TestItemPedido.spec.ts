@@ -49,7 +49,7 @@ describe('Teste da Rota incluirItemDoPedido', () => {
     console.log('response.body: ' + JSON.stringify(response.body))
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     // if (itemDoPedidoId) {
     await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
     await Pedido.destroy({ where: { id: pedido.id } })
@@ -103,7 +103,7 @@ describe('Teste da Rota getItensDoPedidoById', () => {
     expect(response.body).toHaveProperty('message', 'Item do Pedido não encontrado')
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     if (itemDoPedidoId) {
       await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
       await Pedido.destroy({ where: { id: pedido.id } })
@@ -167,7 +167,7 @@ describe('Teste da Rota listarItemDoPedido', () => {
     expect(duration).toBeLessThan(100) // Verifica se a resposta é retornada em menos de 100ms
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     await ItemDoPedido.destroy({ where: { id: itemDoPedidoId1 } })
     await ItemDoPedido.destroy({ where: { id: itemDoPedidoId2 } })
     await Pedido.destroy({ where: { id: pedido.id } })
@@ -207,7 +207,7 @@ describe('Teste da Rota excluirItemDoPedido', () => {
     itemDoPedidoId = itemDoPedido.id
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
     await Pedido.destroy({ where: { id: pedido.id } })
     await Cliente.destroy({ where: { id: cliente.id } })
@@ -296,7 +296,7 @@ describe('Teste da Rota atualizarItemDoPedido', () => {
     )
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
     await Pedido.destroy({ where: { id: pedido.id } })
     await Cliente.destroy({ where: { id: cliente.id } })

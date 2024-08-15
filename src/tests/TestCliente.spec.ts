@@ -52,46 +52,59 @@ describe('Teste da Rota incluirCliente', () => {
 })
 
 describe('Teste da Rota GetClienteById', () => {
+  let clienteId: any
+
   it('Deve retornar o cliente correto quando o id é valido', async () => {
-    const novoCliente = {
+    let cliente = await Cliente.create({
       nome: 'Teste',
       sobrenome: 'Cliente',
       cpf: '22222222222'
-    }
-    let cliente = await Cliente.create(novoCliente)
+    })
 
-    const response = await request(app).get(`/clientes/${cliente.id}`)
+    clienteId = cliente.id
+
+    const response = await request(app).get(`/clientes/${clienteId}`)
 
     expect(response.status).toBe(200)
-    expect(response.body).toHaveProperty('id', cliente.id)
+    expect(response.body).toHaveProperty('id', clienteId)
   })
 
   it('Deve retornar um status 404 quando o Id do cliente nao existe', async () => {
-    const idCliente = 0
+    const id = 0
 
-    const response = await request(app).get(`/clientes/${idCliente}`)
+    const response = await request(app).get(`/clientes/${id}`)
 
     expect(response.status).toBe(404)
     expect(response.body).toHaveProperty('message', 'Cliente não encontrado')
   })
+
+  afterAll(async () => {
+    try {
+      if (clienteId) {
+        await Cliente.destroy({ where: { id: clienteId } })
+      }
+    } catch (error) {
+      console.error('Erro ao limpar cliente:', error)
+    }
+  })
 })
 
 describe('Teste da Rota listarClientes', () => {
+  let cliente1: ClienteInstance
+  let cliente2: ClienteInstance
+
   it('Deve retornar uma lista de clientes', async () => {
-    const cliente1 = {
+    cliente1 = await Cliente.create({
       nome: 'Novo',
       sobrenome: 'Cliente',
       cpf: '11111111111'
-    }
+    })
 
-    const cliente2 = {
+    cliente2 = await Cliente.create({
       nome: 'Teste',
       sobrenome: 'Cliente',
       cpf: '00000000000'
-    }
-
-    await request(app).post('/incluirCliente').send(cliente1)
-    await request(app).post('/incluirCliente').send(cliente2)
+    })
 
     const response = await request(app).get('/clientes')
 
@@ -100,16 +113,15 @@ describe('Teste da Rota listarClientes', () => {
   })
 
   it('Deve retornar uma lista vazia de clientes', async () => {
-    
     const clientes = await Cliente.findAll()
 
     for (const cliente of clientes) {
-      await cliente.destroy();
-  }
+      await cliente.destroy()
+    }
 
     const response = await request(app).get('/clientes')
 
-    console.log("clientes: " + JSON.stringify(response.body))
+    // console.log('clientes: ' + JSON.stringify(response.body))
 
     expect(response.status).toBe(404)
     expect(response.body).toHaveProperty('message', 'Nenhum cliente encontrado')
@@ -121,38 +133,40 @@ describe('Teste da Rota listarClientes', () => {
     const duration = Date.now() - start
 
     expect([200, 404]).toContain(response.status)
-    expect(duration).toBeLessThan(100) // Verifica se a resposta é retornada em menos de 500ms
+    expect(duration).toBeLessThan(100)
+  })
+
+  afterEach(async () => {
+    await Cliente.destroy({ where: { id: cliente1.id } })
+    await Cliente.destroy({ where: { id: cliente2.id } })
   })
 })
 
 describe('Teste da Rota excluirCliente', () => {
   let cliente: ClienteInstance
+
   beforeAll(async () => {
-    // Cria um cliente com um ID único para o teste de exclusão
     cliente = await Cliente.create({
       nome: 'Teste',
       sobrenome: 'Cliente',
       cpf: '00000000000'
     })
-    // Adicione lógica para garantir que não há pedidos vinculados, se necessário
   })
 
   it('Deve excluir um cliente existente', async () => {
     const response = await request(app).delete(`/excluirCliente/${cliente.id}`)
 
-    // Verifica se a resposta da API está correta
     expect(response.status).toBe(200)
     expect(response.body).toHaveProperty(
       'message',
       'Cliente excluído com sucesso'
     )
 
-    // Verifica se o cliente foi realmente excluído
     const clienteExcluido = await Cliente.findByPk(cliente.id)
     expect(clienteExcluido).toBeNull() // Deve retornar null se o cliente foi excluído
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     // Limpa o banco de dados após os testes
     await Cliente.destroy({ where: { id: cliente.id } })
   })

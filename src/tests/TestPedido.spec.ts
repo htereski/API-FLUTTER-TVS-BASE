@@ -35,7 +35,7 @@ describe('Teste da Rota incluirPedido', () => {
     pedidoId = response.body.id // Armazena o ID do pedido recém-criado para limpeza posterior
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     // Remove o pedido e o cliente criado no teste
     if (pedidoId) {
       await Pedido.destroy({ where: { id: pedidoId } })
@@ -77,7 +77,7 @@ describe('Teste da Rota getPedidoById', () => {
     expect(response.body).toHaveProperty('message', 'Pedido não encontrado')
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     // Remove o cliente criado no teste
     if (cliente && pedido) {
       await Pedido.destroy({ where: { id: pedido.id } })
@@ -125,7 +125,7 @@ describe('Teste da Rota excluirPedido', () => {
     pedidoId = pedido.id
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     // Limpa o cliente criado no teste
     await Pedido.destroy({ where: { id: pedidoId } })
     await Cliente.destroy({ where: { id: cliente.id } })
@@ -202,7 +202,7 @@ describe('Teste da Rota atualizarPedido', () => {
     expect(response.body).toHaveProperty('message', 'Pedido não encontrado')
   })
 
-  afterAll(async () => {
+  afterEach(async () => {
     // Limpeza dos pedidos e clientes criados
     await Pedido.destroy({ where: { id: pedidoId } })
     await Cliente.destroy({ where: { id: clienteId } })
