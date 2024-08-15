@@ -19,7 +19,7 @@ export const listarClientes = async (req: Request, res: Response) => {
 
 export const getClienteById = async (req: Request, res: Response) => {
   try {
-    const clienteId = parseInt(req.params.idCliente, 10); // Obter o ID do cliente a partir dos parâmetros da solicitação
+    const clienteId = parseInt(req.params.idCliente, 10); 
     const cliente = await Cliente.findByPk(clienteId);
 
     if (cliente) {
