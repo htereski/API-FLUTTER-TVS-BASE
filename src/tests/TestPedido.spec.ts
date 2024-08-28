@@ -210,33 +210,43 @@ describe('Teste da Rota atualizarPedido', () => {
 })
 
 describe('Teste integração Cliente e Pedido', () => {
-  let pedidoId: number;
-  let clienteId: number;
-  
+  let pedidoId: number
+  let clienteId: number
+
   beforeAll(async () => {
     const cliente = await Cliente.create({
       nome: 'Cliente Teste',
       sobrenome: 'Sobrenome Teste',
       cpf: '12345678900'
-    });
-    clienteId = cliente.id;
-  });
+    })
+    clienteId = cliente.id
+  })
 
   it('Criar um pedido para um cliente e verificar se o pedido está associado corretamente ao cliente', async () => {
     const novoPedido = {
       data: Date.now(),
       id_cliente: clienteId
-    };
+    }
 
-    const response = await request(app).post(`/incluirPedido`).send(novoPedido);
-    pedidoId = response.body.id;
+    const response = await request(app).post(`/incluirPedido`).send(novoPedido)
+    pedidoId = response.body.id
 
-    expect(response.status).toBe(201);
-    expect(response.body.id_cliente).toBe(novoPedido.id_cliente);
-  });
+    expect(response.status).toBe(201)
+    expect(response.body.id_cliente).toBe(novoPedido.id_cliente)
+  })
+
+  it('Deve retornar o cliente e os pedidos associados corretamente', async () => {
+    const response = await request(app).get(`/clientes/${clienteId}`)
+
+    const pedidos = await Pedido.findAll({ where: { id_cliente: clienteId } });
+
+    expect(pedidos.length).toBe(1);
+    expect(response.body.id).toBe(clienteId);
+    expect(response.status).toBe(200)
+  })
 
   afterAll(async () => {
-    await Pedido.destroy({ where: { id: pedidoId } });
-    await Cliente.destroy({ where: { id: clienteId } });
-  });
-});
+    await Pedido.destroy({ where: { id: pedidoId } })
+    await Cliente.destroy({ where: { id: clienteId } })
+  })
+})
