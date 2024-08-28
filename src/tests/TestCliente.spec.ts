@@ -61,6 +61,8 @@ describe('Teste da Rota GetClienteById', () => {
       cpf: '22222222222'
     })
 
+    console.log('PEGOU? ' + JSON.stringify(cliente))
+
     clienteId = cliente.id
 
     const response = await request(app).get(`/clientes/${clienteId}`)
@@ -78,15 +80,15 @@ describe('Teste da Rota GetClienteById', () => {
     expect(response.body).toHaveProperty('message', 'Cliente não encontrado')
   })
 
-  afterAll(async () => {
-    try {
-      if (clienteId) {
-        await Cliente.destroy({ where: { id: clienteId } })
-      }
-    } catch (error) {
-      console.error('Erro ao limpar cliente:', error)
-    }
-  })
+  // afterAll(async () => {
+  //   try {
+  //     if (clienteId) {
+  //       await Cliente.destroy({ where: { id: clienteId } })
+  //     }
+  //   } catch (error) {
+  //     console.error('Erro ao limpar cliente:', error)
+  //   }
+  // })
 })
 
 describe('Teste da Rota listarClientes', () => {

@@ -208,3 +208,35 @@ describe('Teste da Rota atualizarPedido', () => {
     await Cliente.destroy({ where: { id: clienteId } })
   })
 })
+
+describe('Teste integração Cliente e Pedido', () => {
+  let pedidoId: number;
+  let clienteId: number;
+  
+  beforeAll(async () => {
+    const cliente = await Cliente.create({
+      nome: 'Cliente Teste',
+      sobrenome: 'Sobrenome Teste',
+      cpf: '12345678900'
+    });
+    clienteId = cliente.id;
+  });
+
+  it('Criar um pedido para um cliente e verificar se o pedido está associado corretamente ao cliente', async () => {
+    const novoPedido = {
+      data: Date.now(),
+      id_cliente: clienteId
+    };
+
+    const response = await request(app).post(`/incluirPedido`).send(novoPedido);
+    pedidoId = response.body.id;
+
+    expect(response.status).toBe(201);
+    expect(response.body.id_cliente).toBe(novoPedido.id_cliente);
+  });
+
+  afterAll(async () => {
+    await Pedido.destroy({ where: { id: pedidoId } });
+    await Cliente.destroy({ where: { id: clienteId } });
+  });
+});
