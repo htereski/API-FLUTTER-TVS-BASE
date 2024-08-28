@@ -3,7 +3,9 @@ import * as server from '../server'
 import { app } from '../server' // Certifique-se de que o caminho está correto
 import { Request, Response } from 'express'
 import { Produto, ProdutoInstance } from '../models/Produto'
-import { Cliente } from '../models/Cliente'
+import { Cliente, ClienteInstance } from '../models/Cliente'
+import { Pedido, PedidoInstance } from '../models/Pedido'
+import { ItemDoPedido } from '../models/ItemDoPedido'
 
 describe('Teste da Rota incluirProduto', () => {
   let produtoId: number
@@ -142,3 +144,57 @@ describe("Teste da Rota atualizarProduto", () => {
     await Produto.destroy({ where: { id: produtoId } });
   });
 });
+
+describe('Teste de Integridade Relacional para o produto', () => {
+  let itemDoPedidoId: number
+  let pedido: PedidoInstance
+  let cliente: ClienteInstance
+  let produto: ProdutoInstance
+
+  beforeAll(async () => {
+    cliente = await Cliente.create({
+      nome: 'TESTE',
+      sobrenome: 'Cliente',
+      cpf: '22222222222'
+    })
+
+    produto = await Produto.create({
+      descricao: 'Teste Produto'
+    })
+
+    pedido = await Pedido.create({
+      data: Date.now(),
+      id_cliente: cliente.id
+    })
+  
+    const itemPedido = await ItemDoPedido.create({
+      id_pedido: pedido.id,
+      id_produto: produto.id,
+      qtdade: 2
+    });
+
+    itemDoPedidoId = itemPedido.id;
+  });
+
+  it('Deve falhar ao tentar excluir o produto com itens de pedidos associados', async () => {
+    try {
+      await Produto.destroy({ where: { id: produto.id } });
+      fail('A exclusão do produto deveria ter falhado devido a itens de pedidos associados');
+    } catch (error) {
+      expect(error).toBeDefined();
+    }
+
+    const produtoExistente = await Produto.findByPk(produto.id);
+    expect(produtoExistente).not.toBeNull();
+
+    const itemPedidoExistente = await ItemDoPedido.findByPk(itemDoPedidoId);
+    expect(itemPedidoExistente).not.toBeNull();
+  });
+
+  afterAll(async () => {
+    await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } });
+    await Pedido.destroy({ where: { id: pedido.id } });
+    await Cliente.destroy({ where: { id: cliente.id } });
+    await Produto.destroy({ where: { id: produto.id } });
+  });
+})

@@ -13,7 +13,7 @@ describe('Teste da Rota incluirItemDoPedido', () => {
   let cliente: ClienteInstance
   let produto: ProdutoInstance
 
-  it('Deve incluir um novo ItemDoPedido com sucesso', async () => {
+  beforeAll(async () => {
     cliente = await Cliente.create({
       nome: 'Teste',
       sobrenome: 'Cliente',
@@ -28,7 +28,9 @@ describe('Teste da Rota incluirItemDoPedido', () => {
       data: Date.now(),
       id_cliente: cliente.id
     })
+  })
 
+  it('Deve incluir um novo ItemDoPedido com sucesso', async () => {
     const novoItemDePedido = {
       id_pedido: pedido.id,
       id_produto: produto.id,
@@ -49,13 +51,11 @@ describe('Teste da Rota incluirItemDoPedido', () => {
     console.log('response.body: ' + JSON.stringify(response.body))
   })
 
-  afterEach(async () => {
-    // if (itemDoPedidoId) {
+  afterAll(async () => {
     await ItemDoPedido.destroy({ where: { id: itemDoPedidoId } })
     await Pedido.destroy({ where: { id: pedido.id } })
     await Cliente.destroy({ where: { id: cliente.id } })
     await Produto.destroy({ where: { id: produto.id } })
-    // }
   })
 })
 
