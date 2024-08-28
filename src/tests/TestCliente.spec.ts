@@ -3,6 +3,7 @@ import * as server from '../server'
 import { app } from '../server' // Certifique-se de que o caminho está correto
 import { Request, Response } from 'express'
 import { Cliente, ClienteInstance } from '../models/Cliente'
+import { Pedido } from '../models/Pedido'
 
 describe('Teste da Rota incluirCliente', () => {
   let clienteId: number
@@ -249,6 +250,48 @@ describe('Teste da Rota atualizarCliente', () => {
 
   afterAll(async () => {
     await Cliente.destroy({ where: { id: clienteExistenteId } })
+    await Cliente.destroy({ where: { id: clienteId } })
+  })
+})
+
+describe('Teste de Integridade Relacional para o cliente', () => {
+  let clienteId: number
+  let pedidoId: number
+
+  beforeAll(async () => {
+    const cliente = await Cliente.create({
+      nome: 'Cliente Teste',
+      sobrenome: 'Sobrenome Teste',
+      cpf: '12345678900'
+    })
+    clienteId = cliente.id
+
+    const pedido = await Pedido.create({
+      data: Date.now(),
+      id_cliente: clienteId
+    })
+    pedidoId = pedido.id
+  })
+
+  it('Deve falhar ao tentar excluir o cliente com pedidos associados', async () => {
+    try {
+      await Cliente.destroy({ where: { id: clienteId } })
+      fail(
+        'A exclusão do cliente deveria ter falhado devido a pedidos associados'
+      )
+    } catch (error) {
+      expect(error).toBeDefined()
+    }
+
+    const clienteExistente = await Cliente.findByPk(clienteId)
+    expect(clienteExistente).not.toBeNull()
+
+    const pedidoExistente = await Pedido.findByPk(pedidoId)
+    expect(pedidoExistente).not.toBeNull()
+  })
+
+  afterAll(async () => {
+    await Pedido.destroy({ where: { id: pedidoId } })
     await Cliente.destroy({ where: { id: clienteId } })
   })
 })
